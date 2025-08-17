@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="bn">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Search - A Modern Chat App</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:
+        radial-gradient(900px 500px at -10% -10%,#1a2b6655,transparent),
+        radial-gradient(700px 420px at 110% 0%,#0fd8b855,transparent),
+        linear-gradient(180deg,#070b18,#0b1220);color:#e9eef7;display:flex;align-items:center;justify-content:center;padding:16px}
+        .wrap{max-width:900px;width:100%}
+        .card{background:#0f1830;border:1px solid #1e2a4b;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px #0007}
+        header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(90deg,#0f1e45,#0a1533);border-bottom:1px solid #1e2a4b}
+        .brand{display:flex;gap:10px;align-items:center;font-weight:800}
+        .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c9ef8,#3754ff);box-shadow:0 8px 20px #2b49ff55}
+        main{padding:24px;display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+        @media(max-width:820px){main{grid-template-columns:1fr}}
+        .h1{font-size:28px;font-weight:900;line-height:1.2;margin-bottom:10px}
+        .p{opacity:.8}
+        .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+        .btn{text-decoration: none; display: inline-block; background:linear-gradient(180deg,#3d6bff,#2f58e8);color:#fff;border:none;padding:12px 16px;border-radius:12px;cursor:pointer;font-weight:700;box-shadow:0 8px 18px #2f58e866}
+        .btn.ghost{background:#0b1430;border:1px solid #243869;color:#cfe0ff;box-shadow:none}
+        .note{font-size:12px;opacity:.8;margin-top:8px}
+        .hero{min-height:220px;background:
+        radial-gradient(600px 240px at 80% 0%,#17306a40,transparent),
+        linear-gradient(180deg,#0e1a3d,#0d1736);border:1px solid #1e2a4b;border-radius:14px;padding:18px}
+        .fade{animation:fade .35s ease}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+        ul { list-style-position: inside; }
+    </style>
+</head>
+<body>
+<div class="wrap card fade">
+    <header>
+        <div class="brand"><div class="logo"></div><div>Search</div></div>
+        <div class="note" id="userInfo">Guest</div>
+    </header>
+    <main>
+        <section class="hero">
+            <div class="h1">Search — মেসেঞ্জার স্টাইল চ্যাট, ফ্রেন্ড রিকোয়েস্ট ও OTP ভেরিফিকেশন</div>
+            <div class="p">সাইন আপ বা লগইন করার সময় ইমেইলে OTP পাঠানো হয়। মোবাইল ও পিসি—সবখানেই ব্যবহার করা যাবে।</div>
+            <div class="actions">
+                <a class="btn" href="signup.html" id="signupBtn">Create account</a>
+                <a class="btn ghost" href="login.html" id="loginBtn">Login</a>
+                <a class="btn" id="goApp" href="app.html" style="display:none">Open App</a>
+            </div>
+        </section>
+        <section class="hero">
+            <div class="p">Features:</div>
+            <ul class="p" style="margin-top:10px;line-height:1.7">
+                <li>ইউনিক ইউজারনেম + ইমেল + পাসওয়ার্ড</li>
+                <li>সাইন আপ এবং লগইনের জন্য OTP ভেরিফিকেশন</li>
+                <li>পাসওয়ার্ড রিসেটের সুবিধা</li>
+                <li>ফ্রেন্ড রিকোয়েস্ট পাঠানো ও গ্রহণ করা</li>
+                <li>রিয়েল-টাইম মেসেজিং</li>
+                <li>সম্পূর্ণ রেসপন্সিভ ডিজাইন</li>
+            </ul>
+        </section>
+    </main>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCEIZmnV6vlnDHuXkR55czI7ZaNmDndRSk",
+        authDomain: "search-75.firebaseapp.com",
+        projectId: "search-75",
+        storageBucket: "search-75.firebasestorage.app",
+        messagingSenderId: "1080878455131",
+        appId: "1:1080878455131:web:87e15a4e2c1cb02ecb227e",
+        measurementId: "G-YGLHPK8DHW"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    
+    // UI Elements
+    const userInfoEl = document.getElementById("userInfo");
+    const goAppBtn = document.getElementById("goApp");
+    const signupBtn = document.getElementById("signupBtn");
+    const loginBtn = document.getElementById("loginBtn");
+
+    // Check user's login state
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            // User is signed in, get their username from Firestore
+            db.collection("users").doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    userInfoEl.textContent = "@" + doc.data().username;
+                } else {
+                    userInfoEl.textContent = "User";
+                }
+                // Update UI for logged-in user
+                goAppBtn.style.display = "inline-block";
+                signupBtn.style.display = "none";
+                loginBtn.style.display = "none";
+            }).catch(err => {
+                 console.error("Error fetching user data:", err);
+                 userInfoEl.textContent = "User";
+            });
+        } else {
+            // User is signed out
+            userInfoEl.textContent = "Guest";
+            goAppBtn.style.display = "none";
+            signupBtn.style.display = "inline-block";
+            loginBtn.style.display = "inline-block";
+        }
+    });
+</script>
+</body>
+</html>

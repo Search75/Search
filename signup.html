@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Search</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        h1 {
+            color: #764ba2;
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: opacity 0.3s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        p {
+            margin-top: 20px;
+            color: #777;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .hidden {
+            display: none;
+        }
+        #message {
+            margin-top: 15px;
+            font-weight: 500;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Sign Up Form -->
+        <div id="signup-form">
+            <h1>Create Account</h1>
+            <form onsubmit="sendOtp(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" minlength="6" required>
+                </div>
+                <button type="submit" id="signup-btn">Sign Up</button>
+            </form>
+            <p>Already have an account? <a href="login.html">Login</a></p>
+        </div>
+
+        <!-- OTP Verification Form -->
+        <div id="otp-form" class="hidden">
+            <h1>Verify Your Email</h1>
+            <p>An OTP has been sent to your email address.</p>
+            <form onsubmit="verifyOtp(event)">
+                <div class="form-group">
+                    <label for="otp">Enter OTP</label>
+                    <input type="text" id="otp" required>
+                </div>
+                <button type="submit" id="verify-btn">Verify</button>
+            </form>
+        </div>
+
+        <p id="message"></p>
+    </div>
+
+    <!-- Firebase and EmailJS SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <script>
+        // আপনার দেওয়া Firebase কনফিগারেশন
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEIZmnV6vlnDHuXkR55czI7ZaNmDndRSk",
+            authDomain: "search-75.firebaseapp.com",
+            projectId: "search-75",
+            storageBucket: "search-75.appspot.com",
+            messagingSenderId: "1080878455131",
+            appId: "1:1080878455131:web:87e15a4e2c1cb02ecb227e",
+            measurementId: "G-YGLHPK8DHW"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // আপনার দেওয়া EmailJS কনফিগারেশন
+        const EMAILJS_PUBLIC_KEY = 'J_kwrx1EFBtl5gA6Y';
+        const EMAILJS_SERVICE_ID = 'service_w3lekhk';
+        const EMAILJS_TEMPLATE_ID = 'template_otp';
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+
+
+        const signupForm = document.getElementById('signup-form');
+        const otpForm = document.getElementById('otp-form');
+        const messageEl = document.getElementById('message');
+        const signupBtn = document.getElementById('signup-btn');
+        const verifyBtn = document.getElementById('verify-btn');
+
+        // OTP পাঠানোর ফাংশন
+        async function sendOtp(event) {
+            event.preventDefault();
+            messageEl.textContent = '';
+            signupBtn.disabled = true;
+            signupBtn.textContent = 'Sending...';
+
+            const username = document.getElementById('username').value.toLowerCase();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Username ইউনিক কিনা চেক করা
+            try {
+                const usernameDoc = await db.collection('usernames').doc(username).get();
+                if (usernameDoc.exists) {
+                    throw new Error('This username is already taken.');
+                }
+                
+                const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                
+                // EmailJS দিয়ে OTP পাঠানো
+               await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                  to_name: username,
+                  to_email: email,
+                  otp_code: generatedOtp
+                });
+
+                // OTP এবং ইউজার ডেটা sessionStorage-এ সেভ করা
+                sessionStorage.setItem('signupData', JSON.stringify({ username, email, password, otp: generatedOtp }));
+
+                signupForm.classList.add('hidden');
+                otpForm.classList.remove('hidden');
+                messageEl.textContent = `An OTP has been sent to ${email}`;
+                messageEl.style.color = 'green';
+
+            } catch (error) {
+                messageEl.textContent = error.message;
+            } finally {
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Sign Up';
+            }
+        }
+
+        // OTP ভেরিফাই এবং অ্যাকাউন্ট তৈরি করার ফাংশন
+        async function verifyOtp(event) {
+            event.preventDefault();
+            messageEl.textContent = '';
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+
+            const enteredOtp = document.getElementById('otp').value;
+            const storedData = JSON.parse(sessionStorage.getItem('signupData'));
+
+            if (!storedData || enteredOtp !== storedData.otp) {
+                messageEl.textContent = 'Invalid OTP. Please try again.';
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify';
+                return;
+            }
+
+            try {
+                // Firebase-এ নতুন ইউজার তৈরি করা
+                const userCredential = await auth.createUserWithEmailAndPassword(storedData.email, storedData.password);
+                const user = userCredential.user;
+
+                // Firestore-এ ইউজার ডেটা এবং username সেভ করা
+                await db.collection('users').doc(user.uid).set({
+                    username: storedData.username,
+                    email: storedData.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    friends: []
+                });
+                await db.collection('usernames').doc(storedData.username).set({
+                    uid: user.uid
+                });
+                
+                sessionStorage.removeItem('signupData');
+                window.location.href = 'app.html'; // চ্যাট পেজে রিডাইরেক্ট
+
+            } catch (error) {
+                messageEl.textContent = error.message;
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify';
+            }
+        }
+    </script>
+</body>
+</html>

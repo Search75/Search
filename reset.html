@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password - Search</title>
+    <!-- স্টাইলগুলো আগের মতোই -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;700&display=swap');
+        body { font-family: 'Hind Siliguri', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: #333; }
+        .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        h1 { color: #764ba2; margin-bottom: 25px; font-weight: 700; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; }
+        button:disabled { background: #ccc; }
+        p { margin-top: 20px; color: #777; }
+        a { color: #667eea; text-decoration: none; font-weight: 500; }
+        #message { margin-top: 15px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reset Password</h1>
+        <p>Enter your email to receive a password reset link.</p>
+        <form onsubmit="sendResetLink(event)">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <button type="submit" id="reset-btn">Send Reset Link</button>
+        </form>
+        <p><a href="login.html">Back to Login</a></p>
+        <p id="message"></p>
+    </div>
+
+    <!-- SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEIZmnV6vlnDHuXkR55czI7ZaNmDndRSk",
+            authDomain: "search-75.firebaseapp.com",
+            projectId: "search-75",
+            storageBucket: "search-75.firebasestorage.app",
+            messagingSenderId: "1080878455131",
+            appId: "1:1080878455131:web:87e15a4e2c1cb02ecb227e",
+            measurementId: "G-YGLHPK8DHW"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const messageEl = document.getElementById('message');
+        const resetBtn = document.getElementById('reset-btn');
+
+        async function sendResetLink(event) {
+            event.preventDefault();
+            messageEl.textContent = '';
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Sending...';
+
+            const email = document.getElementById('email').value;
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                messageEl.textContent = 'Password reset link sent! Please check your email.';
+                messageEl.style.color = 'green';
+            } catch (error) {
+                messageEl.textContent = error.message;
+                messageEl.style.color = 'red';
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Send Reset Link';
+            }
+        }
+    </script>
+</body>
+</html>
